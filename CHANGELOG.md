@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.7 - 2026-04-20
+
+### Changed
+- Locale badge now prefers native labels with a short-code fallback on tight widths.
+
 ## 1.1.6 - 2026-04-20
 
 ### Changed

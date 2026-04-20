@@ -168,27 +168,40 @@ function sanitizeStatusInline(text: string): string {
 	return s.replace(/ +/g, " ").trim();
 }
 
-function localeBadge(locale: string | undefined): string {
+function localeBadge(locale: string | undefined, maxWidth?: number): string {
 	const raw = String(locale ?? "en").trim().replace(/_/g, "-");
 	const l = raw.toLowerCase();
 	const base = l.split(/[-_]/)[0] || "en";
 
 	// Prefer native/autonym labels where reasonable (status bar should show native chars).
 	// Keep these intentionally short: they consume footer width.
-	if (l === "zh-tw" || l.startsWith("zh-tw") || l.startsWith("zh-hant")) return "繁體";
-	if (l === "zh-cn" || l.startsWith("zh-cn") || l.startsWith("zh-hans")) return "简体";
-	if (base === "zh") return "中文";
+	const full =
+		l === "zh-tw" || l.startsWith("zh-tw") || l.startsWith("zh-hant")
+			? "繁體"
+			: l === "zh-cn" || l.startsWith("zh-cn") || l.startsWith("zh-hans")
+				? "简体"
+				: base === "zh"
+					? "中文"
+					: base === "ja"
+						? "日本語"
+						: base === "ko"
+							? "한국어"
+							: base === "es"
+								? "Español"
+								: l === "pt-br" || base === "pt"
+									? "Português"
+									: base === "fr"
+										? "Français"
+										: base === "de"
+											? "Deutsch"
+											: base === "en"
+												? "English"
+												: base.slice(0, 2);
 
-	if (base === "ja") return "日本語";
-	if (base === "ko") return "한국어";
-	if (base === "es") return "Español";
-	if (l === "pt-br" || base === "pt") return "Português";
-	if (base === "fr") return "Français";
-	if (base === "de") return "Deutsch";
-	if (base === "en") return "English";
-
-	// Fallback: show a stable code-like badge.
-	return base.slice(0, 2);
+	if (typeof maxWidth === "number" && maxWidth > 0 && visibleWidth(full) > Math.max(6, Math.floor(maxWidth / 4))) {
+		return base.slice(0, 2);
+	}
+	return full;
 }
 
 function clampPct(v: number): number {
@@ -845,13 +858,10 @@ export default function oneliner(pi: ExtensionAPI): void {
 
 			// Re-render immediately when pi-i18n switches locale.
 			let lastLocale = piI18n?.getLocale?.() ?? "en";
-			let lastBadge = localeBadge(lastLocale);
 			const unsubLocale = pi.events.on("pi-i18n/localeChanged", (payload: any) => {
 				if (disposed) return;
 				bindI18n();
-				const nextLocale = String(payload?.locale ?? piI18n?.getLocale?.() ?? lastLocale ?? "en");
-				lastLocale = nextLocale;
-				lastBadge = localeBadge(nextLocale);
+				lastLocale = String(payload?.locale ?? piI18n?.getLocale?.() ?? lastLocale ?? "en");
 				tui.requestRender();
 			});
 
@@ -1049,7 +1059,8 @@ export default function oneliner(pi: ExtensionAPI): void {
 				invalidate() {},
 				render(width: number): string[] {
 					// Always show a tiny locale badge on the far right.
-					const badge = theme.fg("dim", lastBadge);
+					const badgeText = localeBadge(lastLocale, width);
+					const badge = theme.fg("dim", badgeText);
 					const badgeW = visibleWidth(badge);
 					if (width <= badgeW) return [truncateToWidth(badge, width, "…")];
 
