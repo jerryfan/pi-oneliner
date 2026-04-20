@@ -1,0 +1,42 @@
+{
+  "name": "@jrryfn/oneliner",
+  "version": "1.1.5",
+  "description": "One-line sticky footer extension for pi coding agent.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jerryfan/oneliner.git"
+  },
+  "homepage": "https://github.com/jerryfan/oneliner",
+  "bugs": {
+    "url": "https://github.com/jerryfan/oneliner/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "statusline",
+    "terminal-ui"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "index.ts",
+    "locales/*.json",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "oneliner.json.example"
+  ],
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-tui": "*"
+  }
+}

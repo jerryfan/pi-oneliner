@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "namespace": "ext.oneliner",
+  "locale": "zh-TW",
+  "messages": {
+    "command.description": "oneliner：單行頁尾設定（執行 /oneliner）",
+
+    "help.title": "oneliner",
+    "help.happyPath": "建議用法：",
+    "help.other": "其他：",
+    "help.line.ui": "  /oneliner  → 設定選單",
+    "help.line.save": "  /oneliner save → 儲存設定",
+    "help.line.presets": "  /oneliner full|compact|ultra",
+    "help.line.misc": "  /oneliner statuses|zen|doctor",
+    "help.line.reload": "  /oneliner reload",
+    "help.line.init": "  /oneliner init-config",
+    "help.configPath": "設定檔：{path}",
+    "help.closeHint": "enter/esc 關閉",
+
+    "picker.title": "oneliner",
+    "picker.subtitle": "選擇動作",
+    "picker.navHint": "↑↓ 移動 • enter 套用 • esc 取消",
+    "picker.current": "（目前）",
+
+    "state.on": "開",
+    "state.off": "關",
+
+    "picker.preset.full.label": "預設：full{current}",
+    "picker.preset.full.desc": "資訊最多，仍維持一行",
+    "picker.preset.compact.label": "預設：compact{current}",
+    "picker.preset.compact.desc": "更積極地縮短顯示",
+    "picker.preset.ultra.label": "預設：ultra{current}",
+    "picker.preset.ultra.desc": "最精簡；可能省略 git 計數",
+
+    "picker.statuses.label": "狀態：{state}",
+    "picker.statuses.desc": "在尾端加上純文字 [..] 摘要",
+
+    "picker.zen.label": "禪模式",
+    "picker.zen.desc": "切到 compact + 關閉狀態",
+
+    "picker.doctor.label": "檢查",
+    "picker.doctor.desc": "快速檢查設定與安全項",
+
+    "picker.save.label": "儲存到設定檔",
+    "picker.save.desc": "寫入目前設定",
+
+    "picker.reload.label": "重新載入設定檔",
+    "picker.reload.desc": "重新讀取 oneliner.json",
+
+    "picker.help.label": "說明",
+    "picker.help.desc": "指令列表 + 設定檔路徑",
+
+    "picker.init.label": "建立範例設定（建議）",
+    "picker.init.desc": "以預設值寫入 oneliner.json",
+
+    "notify.zenApplied": "oneliner 禪：compact + 關閉狀態",
+    "notify.preset": "oneliner 預設：{preset}",
+    "notify.statuses": "oneliner 狀態：{state}",
+    "notify.show": "oneliner：{preset} • 狀態 {state}",
+
+    "doctor.problem.configMissing": "缺少設定檔（請執行 /oneliner init-config）",
+    "doctor.problem.pollTooLow": "pollGitMs 建議 >= 500",
+    "doctor.problem.presetInvalid": "preset 必須是 full|compact|ultra",
+    "doctor.healthy": "oneliner 檢查：正常 • 預設 {preset} • 狀態 {state}",
+    "doctor.issues": "oneliner 檢查：{count} 個問題",
+
+    "notify.failedWriteConfig": "寫入設定檔失敗：{error}",
+    "notify.failedSave": "儲存失敗：{error}",
+    "notify.wrote": "已寫入 {path}",
+    "notify.saved": "已儲存 {path}",
+    "notify.reloaded": "已重新載入設定。預設：{preset}",
+    "notify.configAlreadyExists": "設定檔已存在：{path}",
+
+    "usage": "用法：/oneliner [ui] | show | full|compact|ultra | toggle | statuses | zen | doctor | save | reload | init-config | help"
+  }
+}

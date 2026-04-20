@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "namespace": "ext.oneliner",
+  "locale": "ko",
+  "messages": {
+    "command.description": "oneliner: 1줄 푸터 설정(/oneliner)",
+
+    "help.title": "oneliner",
+    "help.happyPath": "자주 쓰는 것:",
+    "help.other": "기타:",
+    "help.line.ui": "  /oneliner  → 선택기 UI",
+    "help.line.save": "  /oneliner save → 설정 저장",
+    "help.line.presets": "  /oneliner full|compact|ultra",
+    "help.line.misc": "  /oneliner statuses|zen|doctor",
+    "help.line.reload": "  /oneliner reload",
+    "help.line.init": "  /oneliner init-config",
+    "help.configPath": "설정: {path}",
+    "help.closeHint": "enter/esc 닫기",
+
+    "picker.title": "oneliner",
+    "picker.subtitle": "동작 선택",
+    "picker.navHint": "↑↓ 이동 • enter 적용 • esc 취소",
+    "picker.current": "(현재)",
+
+    "state.on": "on",
+    "state.off": "off",
+
+    "picker.preset.full.label": "프리셋: full{current}",
+    "picker.preset.full.desc": "가장 자세함(여전히 1줄)",
+    "picker.preset.compact.label": "프리셋: compact{current}",
+    "picker.preset.compact.desc": "더 공격적으로 축약",
+    "picker.preset.ultra.label": "프리셋: ultra{current}",
+    "picker.preset.ultra.desc": "최소; git 카운트를 생략할 수 있음",
+
+    "picker.statuses.label": "상태: {state}",
+    "picker.statuses.desc": "텍스트 전용 [..] 요약 추가",
+
+    "picker.zen.label": "Zen 모드",
+    "picker.zen.desc": "compact + 상태 끔",
+
+    "picker.doctor.label": "Doctor",
+    "picker.doctor.desc": "빠른 설정/안전 점검",
+
+    "picker.save.label": "설정 저장",
+    "picker.save.desc": "현재 설정을 영구 저장",
+
+    "picker.reload.label": "설정 다시 불러오기",
+    "picker.reload.desc": "oneliner.json 다시 읽기",
+
+    "picker.help.label": "도움말",
+    "picker.help.desc": "명령 + 설정 경로",
+
+    "picker.init.label": "초기 설정 만들기(권장)",
+    "picker.init.desc": "기본값으로 oneliner.json 작성",
+
+    "notify.zenApplied": "oneliner zen: compact + statuses off",
+    "notify.preset": "oneliner preset: {preset}",
+    "notify.statuses": "oneliner statuses: {state}",
+    "notify.show": "oneliner: {preset} • statuses {state}",
+
+    "doctor.problem.configMissing": "설정이 없습니다(/oneliner init-config)",
+    "doctor.problem.pollTooLow": "pollGitMs는 500 이상이어야 합니다",
+    "doctor.problem.presetInvalid": "preset은 full|compact|ultra",
+    "doctor.healthy": "oneliner doctor: 정상 • preset {preset} • statuses {state}",
+    "doctor.issues": "oneliner doctor: {count}개 문제",
+
+    "notify.failedWriteConfig": "설정 쓰기 실패: {error}",
+    "notify.failedSave": "저장 실패: {error}",
+    "notify.wrote": "작성됨 {path}",
+    "notify.saved": "저장됨 {path}",
+    "notify.reloaded": "설정 다시 불러옴. preset: {preset}",
+    "notify.configAlreadyExists": "설정이 이미 존재합니다: {path}",
+
+    "usage": "사용법: /oneliner [ui] | show | full|compact|ultra | toggle | statuses | zen | doctor | save | reload | init-config | help"
+  }
+}

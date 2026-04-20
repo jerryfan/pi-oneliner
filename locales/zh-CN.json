@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "namespace": "ext.oneliner",
+  "locale": "zh-CN",
+  "messages": {
+    "command.description": "oneliner：单行页脚配置（运行 /oneliner）",
+
+    "help.title": "oneliner",
+    "help.happyPath": "常用：",
+    "help.other": "其他：",
+    "help.line.ui": "  /oneliner  → 选择器 UI",
+    "help.line.save": "  /oneliner save → 持久化设置",
+    "help.line.presets": "  /oneliner full|compact|ultra",
+    "help.line.misc": "  /oneliner statuses|zen|doctor",
+    "help.line.reload": "  /oneliner reload",
+    "help.line.init": "  /oneliner init-config",
+    "help.configPath": "配置：{path}",
+    "help.closeHint": "enter/esc 关闭",
+
+    "picker.title": "oneliner",
+    "picker.subtitle": "选择操作",
+    "picker.navHint": "↑↓ 导航 • enter 应用 • esc 取消",
+    "picker.current": "（当前）",
+
+    "state.on": "开",
+    "state.off": "关",
+
+    "picker.preset.full.label": "预设：full{current}",
+    "picker.preset.full.desc": "信息最全，但仍是一行",
+    "picker.preset.compact.label": "预设：compact{current}",
+    "picker.preset.compact.desc": "更激进的缩短",
+    "picker.preset.ultra.label": "预设：ultra{current}",
+    "picker.preset.ultra.desc": "最精简；可能不显示 git 计数",
+
+    "picker.statuses.label": "状态：{state}",
+    "picker.statuses.desc": "追加纯文本 [..] 摘要",
+
+    "picker.zen.label": "禅模式",
+    "picker.zen.desc": "compact 预设 + 关闭状态",
+
+    "picker.doctor.label": "Doctor",
+    "picker.doctor.desc": "快速配置与安全检查",
+
+    "picker.save.label": "保存到配置",
+    "picker.save.desc": "持久化当前设置",
+
+    "picker.reload.label": "重新加载配置",
+    "picker.reload.desc": "重新读取 oneliner.json",
+
+    "picker.help.label": "帮助",
+    "picker.help.desc": "命令 + 配置路径",
+
+    "picker.init.label": "创建初始配置（推荐）",
+    "picker.init.desc": "写入默认 oneliner.json",
+
+    "notify.zenApplied": "oneliner zen：compact + 状态关",
+    "notify.preset": "oneliner 预设：{preset}",
+    "notify.statuses": "oneliner 状态：{state}",
+    "notify.show": "oneliner：{preset} • 状态 {state}",
+
+    "doctor.problem.configMissing": "缺少配置（运行 /oneliner init-config）",
+    "doctor.problem.pollTooLow": "pollGitMs 应 >= 500",
+    "doctor.problem.presetInvalid": "preset 必须是 full|compact|ultra",
+    "doctor.healthy": "oneliner doctor：正常 • 预设 {preset} • 状态 {state}",
+    "doctor.issues": "oneliner doctor：{count} 个问题",
+
+    "notify.failedWriteConfig": "写入配置失败：{error}",
+    "notify.failedSave": "保存失败：{error}",
+    "notify.wrote": "已写入 {path}",
+    "notify.saved": "已保存 {path}",
+    "notify.reloaded": "已重新加载配置。预设：{preset}",
+    "notify.configAlreadyExists": "配置已存在：{path}",
+
+    "usage": "用法：/oneliner [ui] | show | full|compact|ultra | toggle | statuses | zen | doctor | save | reload | init-config | help"
+  }
+}

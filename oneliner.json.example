@@ -1,0 +1,11 @@
+{
+  "preset": "full",
+  "maxSessionLen": 18,
+  "maxBranchLen": 26,
+  "maxCwdLen": 28,
+  "pollGitMs": 1500,
+  "showStatuses": true,
+  "modelAliases": {
+    "openai-codex/gpt-5.3*": "5.3c"
+  }
+}

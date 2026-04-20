@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "namespace": "ext.oneliner",
+  "locale": "pt-BR",
+  "messages": {
+    "command.description": "oneliner: configuração do rodapé em 1 linha (/oneliner)",
+
+    "help.title": "oneliner",
+    "help.happyPath": "Caminho feliz:",
+    "help.other": "Outros:",
+    "help.line.ui": "  /oneliner  → UI do seletor",
+    "help.line.save": "  /oneliner save → salvar configurações",
+    "help.line.presets": "  /oneliner full|compact|ultra",
+    "help.line.misc": "  /oneliner statuses|zen|doctor",
+    "help.line.reload": "  /oneliner reload",
+    "help.line.init": "  /oneliner init-config",
+    "help.configPath": "Config: {path}",
+    "help.closeHint": "enter/esc para fechar",
+
+    "picker.title": "oneliner",
+    "picker.subtitle": "Escolha uma ação",
+    "picker.navHint": "↑↓ navegar • enter aplicar • esc cancelar",
+    "picker.current": "(atual)",
+
+    "state.on": "on",
+    "state.off": "off",
+
+    "picker.preset.full.label": "Preset: full{current}",
+    "picker.preset.full.desc": "Mais detalhes, ainda 1 linha",
+    "picker.preset.compact.label": "Preset: compact{current}",
+    "picker.preset.compact.desc": "Encurtamento mais agressivo",
+    "picker.preset.ultra.label": "Preset: ultra{current}",
+    "picker.preset.ultra.desc": "Mínimo; pode omitir contagens do git",
+
+    "picker.statuses.label": "Status: {state}",
+    "picker.statuses.desc": "Adicionar resumo [..] só texto",
+
+    "picker.zen.label": "Modo Zen",
+    "picker.zen.desc": "Preset compact + status off",
+
+    "picker.doctor.label": "Doctor",
+    "picker.doctor.desc": "Checagens rápidas de config e segurança",
+
+    "picker.save.label": "Salvar na config",
+    "picker.save.desc": "Persistir configurações atuais",
+
+    "picker.reload.label": "Recarregar config",
+    "picker.reload.desc": "Reler oneliner.json",
+
+    "picker.help.label": "Ajuda",
+    "picker.help.desc": "Comandos + caminho da config",
+
+    "picker.init.label": "Criar config inicial (recomendado)",
+    "picker.init.desc": "Escreve oneliner.json com padrões",
+
+    "notify.zenApplied": "oneliner zen: compact + statuses off",
+    "notify.preset": "oneliner preset: {preset}",
+    "notify.statuses": "oneliner statuses: {state}",
+    "notify.show": "oneliner: {preset} • statuses {state}",
+
+    "doctor.problem.configMissing": "config ausente (rode /oneliner init-config)",
+    "doctor.problem.pollTooLow": "pollGitMs deve ser >= 500",
+    "doctor.problem.presetInvalid": "preset deve ser full|compact|ultra",
+    "doctor.healthy": "oneliner doctor: ok • preset {preset} • statuses {state}",
+    "doctor.issues": "oneliner doctor: {count} problema(s)",
+
+    "notify.failedWriteConfig": "Falha ao escrever config: {error}",
+    "notify.failedSave": "Falha ao salvar: {error}",
+    "notify.wrote": "Escreveu {path}",
+    "notify.saved": "Salvou {path}",
+    "notify.reloaded": "Config recarregada. preset: {preset}",
+    "notify.configAlreadyExists": "A config já existe: {path}",
+
+    "usage": "Uso: /oneliner [ui] | show | full|compact|ultra | toggle | statuses | zen | doctor | save | reload | init-config | help"
+  }
+}

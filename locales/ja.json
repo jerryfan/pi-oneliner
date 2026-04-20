@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "namespace": "ext.oneliner",
+  "locale": "ja",
+  "messages": {
+    "command.description": "oneliner：1行フッター設定（/oneliner）",
+
+    "help.title": "oneliner",
+    "help.happyPath": "よく使う：",
+    "help.other": "その他：",
+    "help.line.ui": "  /oneliner  → ピッカー UI",
+    "help.line.save": "  /oneliner save → 設定を保存",
+    "help.line.presets": "  /oneliner full|compact|ultra",
+    "help.line.misc": "  /oneliner statuses|zen|doctor",
+    "help.line.reload": "  /oneliner reload",
+    "help.line.init": "  /oneliner init-config",
+    "help.configPath": "設定：{path}",
+    "help.closeHint": "enter/esc で閉じる",
+
+    "picker.title": "oneliner",
+    "picker.subtitle": "操作を選択",
+    "picker.navHint": "↑↓ 移動 • enter 適用 • esc キャンセル",
+    "picker.current": "（現在）",
+
+    "state.on": "on",
+    "state.off": "off",
+
+    "picker.preset.full.label": "プリセット：full{current}",
+    "picker.preset.full.desc": "情報多め（1行のまま）",
+    "picker.preset.compact.label": "プリセット：compact{current}",
+    "picker.preset.compact.desc": "より強く短縮",
+    "picker.preset.ultra.label": "プリセット：ultra{current}",
+    "picker.preset.ultra.desc": "最小（git カウントを省略する場合あり）",
+
+    "picker.statuses.label": "ステータス：{state}",
+    "picker.statuses.desc": "テキストのみの [..] 要約を追加",
+
+    "picker.zen.label": "Zen モード",
+    "picker.zen.desc": "compact + ステータス off",
+
+    "picker.doctor.label": "Doctor",
+    "picker.doctor.desc": "簡易チェック（設定・安全）",
+
+    "picker.save.label": "設定へ保存",
+    "picker.save.desc": "現在の設定を永続化",
+
+    "picker.reload.label": "設定を再読み込み",
+    "picker.reload.desc": "oneliner.json を再読込",
+
+    "picker.help.label": "ヘルプ",
+    "picker.help.desc": "コマンド + 設定パス",
+
+    "picker.init.label": "初期設定を作成（推奨）",
+    "picker.init.desc": "デフォルトで oneliner.json を作成",
+
+    "notify.zenApplied": "oneliner zen：compact + statuses off",
+    "notify.preset": "oneliner preset：{preset}",
+    "notify.statuses": "oneliner statuses：{state}",
+    "notify.show": "oneliner：{preset} • statuses {state}",
+
+    "doctor.problem.configMissing": "設定がありません（/oneliner init-config）",
+    "doctor.problem.pollTooLow": "pollGitMs は 500 以上にしてください",
+    "doctor.problem.presetInvalid": "preset は full|compact|ultra",
+    "doctor.healthy": "oneliner doctor：正常 • preset {preset} • statuses {state}",
+    "doctor.issues": "oneliner doctor：{count} 件",
+
+    "notify.failedWriteConfig": "設定の書き込み失敗：{error}",
+    "notify.failedSave": "保存失敗：{error}",
+    "notify.wrote": "書き込み：{path}",
+    "notify.saved": "保存：{path}",
+    "notify.reloaded": "再読み込み完了。preset：{preset}",
+    "notify.configAlreadyExists": "設定は既に存在します：{path}",
+
+    "usage": "使い方：/oneliner [ui] | show | full|compact|ultra | toggle | statuses | zen | doctor | save | reload | init-config | help"
+  }
+}
