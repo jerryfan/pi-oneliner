@@ -186,6 +186,9 @@ function resolveConfig(): OnelinerConfig & typeof DEFAULT_CONFIG {
 			...((fileCfg.status?.preserveSymbolsKeys ?? []) as string[]),
 		],
 	};
+	// Back-compat: if user set legacy showStatuses but did not set status.enabled, honor showStatuses.
+	mergedStatus.enabled = fileCfg.status?.enabled ?? fileCfg.showStatuses ?? DEFAULT_CONFIG.status.enabled ?? true;
+
 
 	return {
 		...DEFAULT_CONFIG,
