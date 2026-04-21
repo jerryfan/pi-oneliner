@@ -22,6 +22,34 @@ type Preset = "full" | "compact" | "ultra";
 type Layout = "classic" | "sessionFirst";
 type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
+type StatusSelectionMode = "auto" | "allowlist" | "blocklist";
+
+type StatusSelectionConfig = {
+	/** How to select which extension status keys appear in this segment. */
+	mode?: StatusSelectionMode;
+	/** Glob patterns. Example: ["pi-*", "govern"]. */
+	allow?: string[];
+	/** Glob patterns to hide. */
+	block?: string[];
+	/** Glob patterns to sort first (in order). */
+	priority?: string[];
+	/** Max visible statuses (in text mode). */
+	maxVisible?: number;
+};
+
+type OnelinerStatusConfig = {
+	/** Enable/disable statuses in the footer. If unset, falls back to legacy showStatuses. */
+	enabled?: boolean;
+	/** Selection rules for classic layout (status segment in the main line). */
+	classic?: StatusSelectionConfig;
+	/** Selection rules for sessionFirst right-side block. */
+	right?: StatusSelectionConfig;
+	/** Preserve symbol glyphs (e.g. ○◔◑◕●). Default: keep. */
+	preserveSymbols?: "strip" | "keep";
+	/** Keys (glob) that must preserve symbols even if preserveSymbols=strip. */
+	preserveSymbolsKeys?: string[];
+};
+
 type OnelinerConfig = {
 	preset?: Preset;
 	/** Layout of segments. */
@@ -32,7 +60,10 @@ type OnelinerConfig = {
 	maxBranchLen?: number;
 	maxCwdLen?: number;
 	pollGitMs?: number;
+	/** Legacy toggle (kept for backwards compatibility). Prefer status.enabled. */
 	showStatuses?: boolean;
+	/** New status routing + sanitization policy (no hardcoded extension keys). */
+	status?: OnelinerStatusConfig;
 	/** If set, registers a shortcut that cycles presets: full -> compact -> ultra */
 	cycleKey?: string;
 	/** Model alias overrides. Key supports '*' wildcard (simple glob). Example: "openai-codex/gpt-5.3*": "5.3c" */
@@ -43,7 +74,7 @@ const CONFIG_PATH = join(homedir(), ".pi", "agent", "oneliner.json");
 
 const DEFAULT_CONFIG: Required<Pick<
 	OnelinerConfig,
-	"preset" | "layout" | "shortCwd" | "maxSessionLen" | "maxBranchLen" | "maxCwdLen" | "pollGitMs" | "showStatuses" | "modelAliases"
+	"preset" | "layout" | "shortCwd" | "maxSessionLen" | "maxBranchLen" | "maxCwdLen" | "pollGitMs" | "showStatuses" | "status" | "modelAliases"
 >> = {
 	preset: "full",
 	layout: "sessionFirst",
@@ -53,6 +84,13 @@ const DEFAULT_CONFIG: Required<Pick<
 	maxCwdLen: 28,
 	pollGitMs: 1500,
 	showStatuses: true,
+	status: {
+		enabled: true,
+		classic: { mode: "auto" },
+		right: { mode: "auto" },
+		preserveSymbols: "keep",
+		preserveSymbolsKeys: [],
+	},
 	modelAliases: {},
 };
 
@@ -138,10 +176,22 @@ function resolveConfig(): OnelinerConfig & typeof DEFAULT_CONFIG {
 	const preset: Preset | undefined =
 		envPreset === "full" || envPreset === "compact" || envPreset === "ultra" ? envPreset : undefined;
 
+	const mergedStatus: OnelinerStatusConfig = {
+		...(DEFAULT_CONFIG.status ?? {}),
+		...(fileCfg.status ?? {}),
+		classic: { ...(DEFAULT_CONFIG.status?.classic ?? {}), ...(fileCfg.status?.classic ?? {}) },
+		right: { ...(DEFAULT_CONFIG.status?.right ?? {}), ...(fileCfg.status?.right ?? {}) },
+		preserveSymbolsKeys: [
+			...((DEFAULT_CONFIG.status?.preserveSymbolsKeys ?? []) as string[]),
+			...((fileCfg.status?.preserveSymbolsKeys ?? []) as string[]),
+		],
+	};
+
 	return {
 		...DEFAULT_CONFIG,
 		...fileCfg,
 		...(preset ? { preset } : {}),
+		status: mergedStatus,
 		modelAliases: { ...DEFAULT_CONFIG.modelAliases, ...(fileCfg.modelAliases ?? {}) },
 	};
 }
@@ -888,102 +938,91 @@ export default function oneliner(pi: ExtensionAPI): void {
 			const buildStatusesSegment = (
 				widthHint: number,
 				mode: "text" | "count" | "none",
-				opts?: { maxVisible?: number; onlyKeys?: string[] },
+				opts?: { maxVisible?: number; selection?: StatusSelectionConfig },
 			): string | null => {
-				if (!config.showStatuses) return null;
+				const statusCfg = config.status ?? DEFAULT_CONFIG.status;
+				const enabled = statusCfg.enabled ?? config.showStatuses ?? true;
+				if (!enabled) return null;
 				const statuses = footerData.getExtensionStatuses();
 				if (statuses.size === 0) return null;
 				if (mode === "none") return null;
 
-				const keepSymbols = (key: string): boolean => {
-					const k = key.toLowerCase();
-					// Some extensions intentionally encode state as compact glyph+tag.
-					// If we strip symbols, the status becomes meaningless or disappears.
-					return k === "govern" || k === "yo" || k === "igotchu" || k === "pi-semantic";
+				const sel = opts?.selection;
+				const selMode: StatusSelectionMode = sel?.mode ?? "auto";
+				const allow = (sel?.allow ?? []).map((x) => String(x));
+				const block = (sel?.block ?? []).map((x) => String(x));
+				const priority = (sel?.priority ?? []).map((x) => String(x));
+
+				const compile = (patterns: string[]): RegExp[] => patterns.map((p) => globToRegex(p));
+				const allowRx = compile(allow);
+				const blockRx = compile(block);
+				const prioRx = compile(priority);
+				const preserveSymbolsRx = compile(statusCfg.preserveSymbolsKeys ?? []);
+
+				const matchesAny = (rxs: RegExp[], keyLower: string): boolean => rxs.some((r) => r.test(keyLower));
+				const prioRank = (keyLower: string): number => {
+					for (let i = 0; i < prioRx.length; i++) {
+						if (prioRx[i]?.test(keyLower)) return i;
+					}
+					return Number.POSITIVE_INFINITY;
 				};
+
+				const keepSymbolsDefault = (statusCfg.preserveSymbols ?? "keep") === "keep";
+				const keepSymbolsForKey = (keyLower: string): boolean => keepSymbolsDefault || matchesAny(preserveSymbolsRx, keyLower);
 
 				let entries = Array.from(statuses.entries())
 					.map(([k, v]) => {
 						const key = sanitizeInline(String(k ?? ""));
+						const keyLower = key.toLowerCase();
 						const raw = String(v ?? "");
-						// Keep govern/yo glyphs intact; sanitize others more aggressively.
-						const value = keepSymbols(key) ? sanitizeInline(raw) : sanitizeStatusInline(raw);
+						const value = keepSymbolsForKey(keyLower) ? sanitizeInline(raw) : sanitizeStatusInline(raw);
 						return [key, value] as const;
 					})
 					.filter(([, v]) => Boolean(v));
 				if (entries.length === 0) return null;
 
-				// Optional key filter (used for right-side status block)
-				if (opts?.onlyKeys?.length) {
-					const allow = new Set(opts.onlyKeys.map((k) => String(k).toLowerCase()));
-					entries = entries.filter(([k]) => allow.has(String(k).toLowerCase()));
-					if (entries.length === 0) return null;
-				}
+				// Selection (no hardcoded extension keys)
+				entries = entries.filter(([k]) => {
+					const keyLower = String(k).toLowerCase();
+					if (selMode === "allowlist") return allowRx.length > 0 ? matchesAny(allowRx, keyLower) : false;
+					if (selMode === "blocklist") return blockRx.length > 0 ? !matchesAny(blockRx, keyLower) : true;
+					// auto
+					if (blockRx.length > 0 && matchesAny(blockRx, keyLower)) return false;
+					return true;
+				});
+				if (entries.length === 0) return null;
 
-				// Prioritize key mode indicators first (stable + glanceable).
+				// Sort by user priority patterns, then by key
 				entries = entries.sort((a, b) => {
 					const ak = a[0].toLowerCase();
 					const bk = b[0].toLowerCase();
-					if (ak === "yo") return -1;
-					if (bk === "yo") return 1;
-					if (ak === "pi-semantic") return -1;
-					if (bk === "pi-semantic") return 1;
-					if (ak === "govern") return -1;
-					if (bk === "govern") return 1;
-					if (ak === "igotchu") return -1;
-					if (bk === "igotchu") return 1;
-					return 0;
+					const ar = prioRank(ak);
+					const br = prioRank(bk);
+					if (ar != br) return ar - br;
+					return ak.localeCompare(bk);
 				});
 
-				const renderOne = (key: string, text: string): string => {
+				const renderOne = (_key: string, text: string): string => {
 					const maxStatus = 18;
 					const short = text.length <= maxStatus ? text : `${text.slice(0, maxStatus - 1)}…`;
-					const k = key.toLowerCase();
 					const glyph = short.trim().charAt(0);
 
-					if (k === "govern") {
-						const g = glyph;
-						if (g === "✕" || g === "○") return theme.fg("error", theme.bold(short));
-						if (g === "◑" || g === "◔") return theme.fg("warning", short);
-						if (g === "◕" || g === "●") return theme.fg("success", short);
-						return theme.fg("text", short);
-					}
-
-					if (k === "pi-semantic") {
-						// pi-semantic badge policy:
-						// - off: red + bold
-						// - prose: yellow
-						// - terse/dense/ooga/wenyan: green
-						if (glyph === "×" || glyph === "✕" || glyph === "x" || glyph === "X") {
-							return theme.fg("error", theme.bold(short));
-						}
-						if (glyph === "○") return theme.fg("warning", short);
-						return theme.fg("success", short);
-					}
-
-					if (k === "yo" || k === "igotchu") {
-						if (glyph === "✕") return theme.fg("error", theme.bold(short));
-						if (glyph === "●") return theme.fg("error", theme.bold(short));
-						if (glyph === "◕") return theme.fg("warning", theme.bold(short));
-						if (glyph === "◑") return theme.fg("warning", short);
-						if (glyph === "◔") return theme.fg("text", short);
-						if (glyph === "○") return theme.fg("dim", short);
-						return theme.fg("text", short);
-					}
-
+					// Generic glyph coloring (no extension hardcoding).
+					if (glyph === "×" || glyph === "✕" || glyph === "x" || glyph === "X") return theme.fg("error", theme.bold(short));
+					if (glyph === "○") return theme.fg("warning", short);
+					if (glyph === "◑") return theme.fg("warning", short);
+					if (glyph === "◕" || glyph === "●") return theme.fg("success", short);
+					if (glyph === "◔") return theme.fg("text", short);
 					return theme.fg("dim", short);
 				};
 
 				let rendered = "";
 				if (mode === "count") {
-					// Compact mode: show the highest-signal status only (no "+N" spill).
-					const yoEntry = entries.find(([k]) => k.toLowerCase() === "yo");
-					const semEntry = entries.find(([k]) => k.toLowerCase() === "pi-semantic");
-					const governEntry = entries.find(([k]) => k.toLowerCase() === "govern");
-					const chosen = yoEntry ?? semEntry ?? governEntry ?? entries[0];
+					const chosen = entries[0];
 					rendered = chosen ? renderOne(chosen[0], chosen[1]) : theme.fg("dim", "0");
 				} else {
-					const maxVisible = Math.max(1, Math.min(6, opts?.maxVisible ?? 3));
+					const defaultMax = sel?.maxVisible ?? 3;
+					const maxVisible = Math.max(1, Math.min(6, opts?.maxVisible ?? defaultMax));
 					const visible = entries.slice(0, maxVisible).map(([key, text]) => renderOne(key, text));
 					rendered = visible.join(theme.fg("dim", " · "));
 				}
@@ -1063,7 +1102,7 @@ export default function oneliner(pi: ExtensionAPI): void {
 				const loc = buildLocation(opts.maxCwdLen, opts.maxSessionLen, opts.includeSession);
 
 				const git = buildGitSegment(10_000, { includeCounts: opts.includeGitCounts, maxBranchLen: opts.maxBranchLen });
-				const status = buildStatusesSegment(10_000, opts.statusMode);
+				const status = buildStatusesSegment(10_000, opts.statusMode, { selection: config.status?.classic });
 
 				const parts: string[] = [thinkingModel, ctxGauge, loc];
 				const seps: string[] = [" ", " "]; // think->ctx, ctx->loc
@@ -1165,9 +1204,9 @@ export default function oneliner(pi: ExtensionAPI): void {
 					let reserved = badgeW + 1;
 					if (layoutNow === "sessionFirst") {
 						const maxStatusW = Math.max(0, Math.min(30, width - badgeW - 2));
-						const onlyKeys = presetNow === "ultra" ? ["pi-semantic", "govern"] : ["pi-semantic", "yo", "igotchu", "govern"];
-						const maxVisible = presetNow === "ultra" ? 1 : 3;
-						const status = maxStatusW > 0 ? buildStatusesSegment(maxStatusW, "text", { onlyKeys, maxVisible }) : null;
+						const rightSel = config.status?.right;
+						const maxVisible = Math.max(1, Math.min(6, rightSel?.maxVisible ?? (presetNow === "full" ? 3 : presetNow === "compact" ? 2 : 1)));
+						const status = maxStatusW > 0 ? buildStatusesSegment(maxStatusW, "text", { selection: rightSel, maxVisible }) : null;
 						const rightCandidate = status ? `${status} ${badge}` : badge;
 						const rightW = visibleWidth(rightCandidate);
 						// If the right block doesn't fit, fall back to locale-only.

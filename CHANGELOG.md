@@ -1,11 +1,19 @@
 # Changelog
 
-## 1.3.1 - 2026-04-21
+## 1.4.0 - 2026-04-21
 
-### Fixed
-- Footer now shows `pi-semantic` status badge in session-first layout.
-- Preserves `pi-semantic` glyph+tag statuses (no aggressive symbol stripping).
-- Colors `pi-semantic` badges by glyph (off=red, prose=yellow, compressed=green).
+### Added
+- User-configurable status routing (no hardcoded extension keys):
+  - `status.right` selection rules for the session-first right block
+  - `status.classic` selection rules for classic layout
+- Status glyph preservation policy:
+  - `status.preserveSymbols` + `status.preserveSymbolsKeys`
+
+### Changed
+- Session-first footer no longer filters statuses to a hardcoded key list.
+
+### Notes
+- Legacy `showStatuses` remains supported; prefer `status.enabled`.
 
 ## 1.3.0 - 2026-04-21
 

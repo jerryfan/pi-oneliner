@@ -6,6 +6,20 @@
   "maxBranchLen": 26,
   "maxCwdLen": 28,
   "pollGitMs": 1500,
+
   "showStatuses": true,
+  "status": {
+    "enabled": true,
+    "right": {
+      "mode": "auto",
+      "maxVisible": 3
+    },
+    "classic": {
+      "mode": "auto"
+    },
+    "preserveSymbols": "keep",
+    "preserveSymbolsKeys": ["pi-*", "govern", "yo", "igotchu"]
+  },
+
   "modelAliases": {}
 }

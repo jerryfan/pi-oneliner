@@ -57,6 +57,33 @@ Useful keys:
 - `layout`: `"sessionFirst"` (default) or `"classic"`
 - `shortCwd`: `true` to show the last two cwd segments (e.g. `code\pi`)
 
+### Statuses (no hardcoded extension keys)
+
+By default, oneliner will render whatever extension statuses exist (`ctx.ui.setStatus(key, value)`), subject to width + preset.
+
+You can control which status keys appear (and their ordering) without modifying oneliner:
+
+```json
+{
+  "status": {
+    "enabled": true,
+    "right": {
+      "mode": "allowlist",
+      "allow": ["pi-semantic", "govern"],
+      "priority": ["pi-semantic"],
+      "maxVisible": 2
+    },
+    "classic": { "mode": "auto" },
+    "preserveSymbols": "keep"
+  }
+}
+```
+
+Notes:
+- `right` applies to the session-first right-side block (next to locale).
+- `classic` applies to classic layout’s main-line status segment.
+- Legacy `showStatuses` still works; prefer `status.enabled`.
+
 ## License
 
 MIT
