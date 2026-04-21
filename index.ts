@@ -18,10 +18,16 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 type Preset = "full" | "compact" | "ultra";
+
+type Layout = "classic" | "sessionFirst";
 type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
 type OnelinerConfig = {
 	preset?: Preset;
+	/** Layout of segments. */
+	layout?: Layout;
+	/** When layout is sessionFirst, show the last two cwd segments (e.g. "code\pi") instead of the full path. */
+	shortCwd?: boolean;
 	maxSessionLen?: number;
 	maxBranchLen?: number;
 	maxCwdLen?: number;
@@ -37,9 +43,11 @@ const CONFIG_PATH = join(homedir(), ".pi", "agent", "oneliner.json");
 
 const DEFAULT_CONFIG: Required<Pick<
 	OnelinerConfig,
-	"preset" | "maxSessionLen" | "maxBranchLen" | "maxCwdLen" | "pollGitMs" | "showStatuses" | "modelAliases"
+	"preset" | "layout" | "shortCwd" | "maxSessionLen" | "maxBranchLen" | "maxCwdLen" | "pollGitMs" | "showStatuses" | "modelAliases"
 >> = {
 	preset: "full",
+	layout: "sessionFirst",
+	shortCwd: true,
 	maxSessionLen: 18,
 	maxBranchLen: 26,
 	maxCwdLen: 28,
@@ -168,40 +176,23 @@ function sanitizeStatusInline(text: string): string {
 	return s.replace(/ +/g, " ").trim();
 }
 
-function localeBadge(locale: string | undefined, maxWidth?: number): string {
+function localeBadge(locale: string | undefined, _maxWidth?: number): string {
+	// Footer should be glanceable in multi-window layouts: keep locale to 1–2 chars.
 	const raw = String(locale ?? "en").trim().replace(/_/g, "-");
 	const l = raw.toLowerCase();
-	const base = l.split(/[-_]/)[0] || "en";
+	const parts = l.split("-").filter(Boolean);
+	const lang = parts[0] || "en";
+	const region = parts[1] || "";
 
-	// Prefer native/autonym labels where reasonable (status bar should show native chars).
-	// Keep these intentionally short: they consume footer width.
-	const full =
-		l === "zh-tw" || l.startsWith("zh-tw") || l.startsWith("zh-hant")
-			? "繁體"
-			: l === "zh-cn" || l.startsWith("zh-cn") || l.startsWith("zh-hans")
-				? "简体"
-				: base === "zh"
-					? "中文"
-					: base === "ja"
-						? "日本語"
-						: base === "ko"
-							? "한국어"
-							: base === "es"
-								? "Español"
-								: l === "pt-br" || base === "pt"
-									? "Português"
-									: base === "fr"
-										? "Français"
-										: base === "de"
-											? "Deutsch"
-											: base === "en"
-												? "English"
-												: base.slice(0, 2);
-
-	if (typeof maxWidth === "number" && maxWidth > 0 && visibleWidth(full) > Math.max(6, Math.floor(maxWidth / 4))) {
-		return base.slice(0, 2);
+	// Prefer region hints for common Chinese variants.
+	if (lang === "zh") {
+		if (region === "tw" || l.includes("hant")) return "Tw";
+		if (region === "cn" || l.includes("hans")) return "Cn";
+		return "Zh";
 	}
-	return full;
+
+	const two = (lang.slice(0, 1).toUpperCase() + lang.slice(1, 2).toLowerCase()).slice(0, 2);
+	return two || "En";
 }
 
 function clampPct(v: number): number {
@@ -354,6 +345,15 @@ function replaceHomeWithTilde(p: string): string {
 	const home = process.env.HOME || process.env.USERPROFILE;
 	if (home && p.startsWith(home)) return `~${p.slice(home.length)}`;
 	return p;
+}
+
+function shortCwdDisplay(raw: string): string {
+	const trimmed = String(raw ?? "").replace(/[\/]+$/, "");
+	if (!trimmed) return trimmed;
+	const sep = trimmed.includes("\\") ? "\\" : "/";
+	const parts = trimmed.split(/[\/]+/).filter(Boolean);
+	if (parts.length >= 2) return parts.slice(-2).join(sep);
+	return parts[0] ?? trimmed;
 }
 
 function middleTruncatePlain(s: string, maxLen: number): string {
@@ -885,7 +885,11 @@ export default function oneliner(pi: ExtensionAPI): void {
 				return truncateToWidth(s, widthHint);
 			};
 
-			const buildStatusesSegment = (widthHint: number, mode: "text" | "count" | "none"): string | null => {
+			const buildStatusesSegment = (
+				widthHint: number,
+				mode: "text" | "count" | "none",
+				opts?: { maxVisible?: number; onlyKeys?: string[] },
+			): string | null => {
 				if (!config.showStatuses) return null;
 				const statuses = footerData.getExtensionStatuses();
 				if (statuses.size === 0) return null;
@@ -907,7 +911,14 @@ export default function oneliner(pi: ExtensionAPI): void {
 					.filter(([, v]) => Boolean(v));
 				if (entries.length === 0) return null;
 
-				// Always prioritize yo first (ultra presets may be in "count" mode).
+				// Optional key filter (used for right-side status block)
+				if (opts?.onlyKeys?.length) {
+					const allow = new Set(opts.onlyKeys.map((k) => String(k).toLowerCase()));
+					entries = entries.filter(([k]) => allow.has(String(k).toLowerCase()));
+					if (entries.length === 0) return null;
+				}
+
+				// Always prioritize yo first.
 				entries = entries.sort((a, b) => {
 					const ak = a[0].toLowerCase();
 					const bk = b[0].toLowerCase();
@@ -947,20 +958,15 @@ export default function oneliner(pi: ExtensionAPI): void {
 
 				let rendered = "";
 				if (mode === "count") {
+					// Compact mode: show the highest-signal status only (no "+N" spill).
 					const yoEntry = entries.find(([k]) => k.toLowerCase() === "yo");
-					if (yoEntry) {
-						rendered = renderOne(yoEntry[0], yoEntry[1]);
-						const more = entries.length - 1;
-						if (more > 0) rendered += theme.fg("dim", ` +${more}`);
-					} else {
-						rendered = theme.fg("dim", String(entries.length));
-					}
+					const governEntry = entries.find(([k]) => k.toLowerCase() === "govern");
+					const chosen = yoEntry ?? governEntry ?? entries[0];
+					rendered = chosen ? renderOne(chosen[0], chosen[1]) : theme.fg("dim", "0");
 				} else {
-					const maxVisible = 3;
+					const maxVisible = Math.max(1, Math.min(6, opts?.maxVisible ?? 3));
 					const visible = entries.slice(0, maxVisible).map(([key, text]) => renderOne(key, text));
 					rendered = visible.join(theme.fg("dim", " · "));
-					const more = entries.length - visible.length;
-					if (more > 0) rendered += theme.fg("dim", ` +${more}`);
 				}
 
 				return truncateToWidth(rendered, widthHint);
@@ -992,19 +998,30 @@ export default function oneliner(pi: ExtensionAPI): void {
 				return shouldBold ? theme.fg(color, theme.bold(raw)) : theme.fg(color, raw);
 			};
 
-			const buildLocation = (maxCwdLen: number, maxSessionLen: number, includeSession: boolean): string => {
-				let cwd = replaceHomeWithTilde(ctx.sessionManager.getCwd());
+			const buildCwd = (maxCwdLen: number): string => {
+				const raw = ctx.sessionManager.getCwd();
+				if (config.shortCwd) {
+					return theme.fg("accent", shortCwdDisplay(raw));
+				}
+				let cwd = replaceHomeWithTilde(raw);
 				cwd = middleTruncatePlain(cwd, maxCwdLen);
+				return theme.fg("accent", cwd);
+			};
 
+			const buildSession = (maxSessionLen: number): string | null => {
 				let session = ctx.sessionManager.getSessionName();
 				session = session ? sanitizeInline(session) : undefined;
-				if (session && session.length > maxSessionLen) session = `${session.slice(0, Math.max(1, maxSessionLen - 1))}…`;
+				if (!session) return null;
+				if (session.length > maxSessionLen) session = `${session.slice(0, Math.max(1, maxSessionLen - 1))}…`;
+				return theme.fg("text", session);
+			};
 
-				const cwdStyled = theme.fg("accent", cwd);
-				if (includeSession && session) {
-					return `${cwdStyled} ${theme.fg("dim", "•")} ${theme.fg("text", session)}`;
-				}
-				return `${cwdStyled}`;
+			const buildLocation = (maxCwdLen: number, maxSessionLen: number, includeSession: boolean): string => {
+				const cwdStyled = buildCwd(maxCwdLen);
+				if (!includeSession) return cwdStyled;
+				const session = buildSession(maxSessionLen);
+				if (session) return `${cwdStyled} ${theme.fg("dim", "•")} ${session}`;
+				return cwdStyled;
 			};
 
 			const joinLine = (parts: string[], separators: string[]): string => {
@@ -1013,7 +1030,7 @@ export default function oneliner(pi: ExtensionAPI): void {
 				return out;
 			};
 
-			const tryRender = (opts: {
+			const tryRenderClassic = (opts: {
 				sepBetweenLocationAndGit: " ";
 				includeGitCounts: boolean;
 				includeSession: boolean;
@@ -1043,6 +1060,47 @@ export default function oneliner(pi: ExtensionAPI): void {
 				return joinLine(parts, seps);
 			};
 
+			const tryRenderSessionFirst = (opts: {
+				includeContext: boolean;
+				includeGitCounts: boolean;
+				includeGit: boolean;
+				includeCwd: boolean;
+				maxCwdLen: number;
+				maxSessionLen: number;
+				maxBranchLen: number;
+			}): string => {
+				const session = buildSession(opts.maxSessionLen);
+				const thinkingModel = buildThinkingModel();
+				const ctxGauge = opts.includeContext ? buildContextGauge() : "";
+
+				const cwd = opts.includeCwd ? buildCwd(opts.maxCwdLen) : "";
+				const git = opts.includeGit ? buildGitSegment(10_000, { includeCounts: opts.includeGitCounts, maxBranchLen: opts.maxBranchLen }) : null;
+
+				const parts: string[] = [];
+				const seps: string[] = [];
+
+				if (session) parts.push(session);
+				parts.push(thinkingModel);
+				if (parts.length > 1) seps.push("  ");
+
+				if (ctxGauge) {
+					parts.push(ctxGauge);
+					seps.push("  ");
+				}
+
+				if (cwd) {
+					parts.push(cwd);
+					seps.push("  ");
+				}
+
+				if (git) {
+					parts.push(git);
+					seps.push(" ");
+				}
+
+				return joinLine(parts, seps);
+			};
+
 			const fits = (line: string, width: number): boolean => visibleWidth(line) <= width;
 
 			return {
@@ -1058,16 +1116,12 @@ export default function oneliner(pi: ExtensionAPI): void {
 				},
 				invalidate() {},
 				render(width: number): string[] {
-					// Always show a tiny locale badge on the far right.
 					bindI18n();
 					const activeLocale = piI18n?.getLocale?.() ?? lastLocale;
 					const badgeText = localeBadge(activeLocale, width);
 					const badge = theme.fg("dim", badgeText);
 					const badgeW = visibleWidth(badge);
 					if (width <= badgeW) return [truncateToWidth(badge, width, "…")];
-
-					const reserved = badgeW + 1; // 1 space before badge
-					const mainWidth = Math.max(0, width - reserved);
 
 					// If poll interval changed (via /oneliner reload), restart timer.
 					const desiredPollMs = Math.max(500, config.pollGitMs ?? DEFAULT_CONFIG.pollGitMs);
@@ -1082,37 +1136,75 @@ export default function oneliner(pi: ExtensionAPI): void {
 					}
 
 					const presetNow: Preset = preset;
-					const statusModeDefault: "text" | "count" | "none" =
-						presetNow === "full" ? "text" : presetNow === "compact" ? "count" : "none";
+					const layoutNow: Layout = config.layout === "classic" ? "classic" : "sessionFirst";
+					const includeGitCountsDefault = presetNow !== "ultra";
+					const includeContextDefault = presetNow === "full";
+					const statusModeDefault: "text" | "count" | "none" = presetNow === "ultra" ? "none" : "text";
 
-					const base = {
-						maxCwdLen: config.maxCwdLen,
-						maxSessionLen: config.maxSessionLen,
-						maxBranchLen: config.maxBranchLen,
-						sepBetweenLocationAndGit: " ",
-						includeGitCounts: presetNow !== "ultra",
-						includeSession: true,
-						statusMode: statusModeDefault,
-					} as const;
+					// Right block: in sessionFirst layout, keep statuses on the right before locale.
+					let right = badge;
+					let reserved = badgeW + 1;
+					if (layoutNow === "sessionFirst") {
+						const maxStatusW = Math.max(0, Math.min(30, width - badgeW - 2));
+						const onlyKeys = presetNow === "ultra" ? ["govern"] : ["yo", "igotchu", "govern"];
+						const maxVisible = presetNow === "ultra" ? 1 : 2;
+						const status = maxStatusW > 0 ? buildStatusesSegment(maxStatusW, "text", { onlyKeys, maxVisible }) : null;
+						const rightCandidate = status ? `${status} ${badge}` : badge;
+						const rightW = visibleWidth(rightCandidate);
+						// If the right block doesn't fit, fall back to locale-only.
+						if (rightW + 1 < width) {
+							right = rightCandidate;
+							reserved = rightW + 1;
+						}
+					}
+
+					const mainWidth = Math.max(0, width - reserved);
 
 					const candidates: string[] = [];
-					const add = (o: Partial<Parameters<typeof tryRender>[0]>) => candidates.push(tryRender({ ...base, ...o }));
-
-					// 1) Ideal
-					add({});
-					// 2) Status fallback: count, then none
-					add({ statusMode: "count" });
-					add({ statusMode: "none" });
-					// 4) Drop git counts
-					add({ includeGitCounts: false });
-					// 5) Truncate session more, then drop session
-					add({ maxSessionLen: Math.min(base.maxSessionLen, 12) });
-					add({ includeSession: false });
-					// 6) Shrink cwd + branch
-					add({ maxCwdLen: Math.min(base.maxCwdLen, 20) });
-					add({ maxCwdLen: Math.min(base.maxCwdLen, 14) });
-					add({ maxBranchLen: Math.min(base.maxBranchLen, 18) });
-					add({ maxBranchLen: Math.min(base.maxBranchLen, 10) });
+					if (layoutNow === "sessionFirst") {
+						const base = {
+							includeContext: includeContextDefault,
+							includeGitCounts: includeGitCountsDefault,
+							includeGit: true,
+							includeCwd: true,
+							maxCwdLen: config.maxCwdLen,
+							maxSessionLen: config.maxSessionLen,
+							maxBranchLen: config.maxBranchLen,
+						} as const;
+						const add = (o: Partial<Parameters<typeof tryRenderSessionFirst>[0]>) => candidates.push(tryRenderSessionFirst({ ...base, ...o }));
+						add({});
+						// Drop context first (keep session+model+repo/branch)
+						add({ includeContext: false });
+						// Drop git counts
+						add({ includeGitCounts: false });
+						// Tighten session
+						add({ maxSessionLen: Math.min(base.maxSessionLen, 12) });
+						// Drop git, then cwd
+						add({ includeGit: false });
+						add({ includeCwd: false });
+						add({ maxSessionLen: Math.min(base.maxSessionLen, 8) });
+					} else {
+						const base = {
+							maxCwdLen: config.maxCwdLen,
+							maxSessionLen: config.maxSessionLen,
+							maxBranchLen: config.maxBranchLen,
+							sepBetweenLocationAndGit: " ",
+							includeGitCounts: includeGitCountsDefault,
+							includeSession: true,
+							statusMode: statusModeDefault,
+						} as const;
+						const add = (o: Partial<Parameters<typeof tryRenderClassic>[0]>) => candidates.push(tryRenderClassic({ ...base, ...o }));
+						add({});
+						add({ statusMode: "count" });
+						add({ statusMode: "none" });
+						add({ includeGitCounts: false });
+						add({ maxSessionLen: Math.min(base.maxSessionLen, 12) });
+						add({ includeSession: false });
+						add({ maxCwdLen: Math.min(base.maxCwdLen, 20) });
+						add({ maxCwdLen: Math.min(base.maxCwdLen, 14) });
+						add({ maxBranchLen: Math.min(base.maxBranchLen, 18) });
+						add({ maxBranchLen: Math.min(base.maxBranchLen, 10) });
+					}
 
 					let chosen = candidates[0] ?? "";
 					for (const c of candidates) {
@@ -1124,7 +1216,7 @@ export default function oneliner(pi: ExtensionAPI): void {
 
 					chosen = truncateToWidth(chosen, mainWidth, "…");
 					const pad = " ".repeat(Math.max(0, mainWidth - visibleWidth(chosen)));
-					return [chosen + pad + " " + badge];
+					return [chosen + pad + " " + right];
 				},
 			};
 		});

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.0 - 2026-04-21
+
+### Changed
+- npm package renamed to `@jrryfn/pi-oneliner`.
+- Session name is now plain text in session-first layout.
+- Short cwd mode now shows the last two path segments, e.g. `code\pi` for `C:\code\pi`.
+
+## 1.2.0 - 2026-04-21
+
+### Changed
+- New default footer layout optimized for multi-window workflows: session name first, statuses on the right.
+- Locale badge is now 1–2 characters (e.g. "En").
+- Status segment no longer emits "+N" overflow.
+- Added config keys: `layout` and `shortCwd`.
+
 ## 1.1.9 - 2026-04-20
 
 ### Changed

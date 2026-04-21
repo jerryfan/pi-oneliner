@@ -1,8 +1,8 @@
-# oneliner Release Plan (lean, npm-first)
+# pi-oneliner Release Plan (lean, npm-first)
 
 ## 1) Package setup
 
-- Ensure `oneliner/package.json` has the publishable name/version.
+- Ensure `oneliner/package.json` has the publishable npm name/version.
 - Confirm `pi.extensions` points to `./index.ts`.
 - Keep `files` minimal (`index.ts`, docs, config example, license).
 
@@ -40,8 +40,8 @@ npm publish --access public
 
 ## 4) Launch checklist
 
-- Tag: `oneliner-v<version>`
+- Tag: `pi-oneliner-v<version>`
 - GitHub release notes include changelog excerpt + screenshot/GIF
 - Add npm install snippet to release body:
-  - `pi install npm:@jrryfn/oneliner`
+  - `pi install npm:@jrryfn/pi-oneliner`
 
