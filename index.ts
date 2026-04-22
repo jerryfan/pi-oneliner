@@ -242,58 +242,13 @@ const LOCALE_BADGE_BY_TAG: Record<string, string> = {
 	"ja": "日本語",
 	"ko": "한국어",
 
-	// Everything else: stable short tags (major languages included even if untranslated)
+	// Everything else: stable short tags (keep compact; only include high-confidence cases)
 	"en": "en",
-	"en-SG": "sg",
-	"sg": "sg",
 	"es": "es",
 	"de": "de",
 	"fr": "fr",
-	"it": "it",
 	"pt": "pt",
 	"pt-BR": "pt-BR",
-	"pt-PT": "pt-PT",
-	"nl": "nl",
-	"sv": "sv",
-	"da": "da",
-	"no": "no",
-	"nb": "nb",
-	"nn": "nn",
-	"fi": "fi",
-	"pl": "pl",
-	"cs": "cs",
-	"sk": "sk",
-	"hu": "hu",
-	"ro": "ro",
-	"bg": "bg",
-	"uk": "uk",
-	"ru": "ru",
-	"sr": "sr",
-	"hr": "hr",
-	"sl": "sl",
-	"tr": "tr",
-	"el": "el",
-	"ca": "ca",
-	"id": "id",
-	"ms": "ms",
-	"vi": "vi",
-	"th": "th",
-	"fil": "fil",
-	"tl": "tl",
-	"hi": "hi",
-	"bn": "bn",
-	"pa": "pa",
-	"mr": "mr",
-	"ta": "ta",
-	"te": "te",
-	"gu": "gu",
-	"kn": "kn",
-	"ml": "ml",
-	"ur": "ur",
-	"fa": "fa",
-	"ar": "ar",
-	"he": "he",
-	"sw": "sw",
 };
 
 function canonicalizeLocaleTagForBadge(locale: string): string {
@@ -448,7 +403,7 @@ type BuiltInAliasRule = {
 };
 
 const BUILTIN_MODEL_ALIAS_RULES: BuiltInAliasRule[] = [
-	{ alias: "5.4s", id: /^gpt-5\.3-codex-spark$/i, name: /^gpt\s*5\.3\s+codex\s+spark$/i },
+	{ alias: "5.3s", id: /^gpt-5\.3-codex-spark$/i, name: /^gpt\s*5\.3\s+codex\s+spark$/i },
 	{ alias: "5.4c", id: /^gpt-5\.4-codex(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.4\s+codex(?:\s+.+)?$/i },
 	{ alias: "5.4m", id: /^gpt-5\.4-mini(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.4\s+mini(?:\s+.+)?$/i },
 	{ alias: "5.4", id: /^gpt-5\.4(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.4(?:\s+.+)?$/i },
@@ -843,7 +798,7 @@ export default function oneliner(pi: ExtensionAPI): void {
 						maxCwdLen: 28,
 						pollGitMs: 1500,
 						showStatuses: true,
-						modelAliases: { "openai-codex/gpt-5.3-codex-spark": "5.4s" },
+						modelAliases: { "openai-codex/gpt-5.3-codex-spark": "5.3s" },
 					});
 					if (!res.success) {
 						ctx.ui.notify(t("notify.failedWriteConfig", { error: String(res.error ?? "") }), "error");
@@ -992,7 +947,7 @@ export default function oneliner(pi: ExtensionAPI): void {
 					maxCwdLen: 28,
 					pollGitMs: 1500,
 					showStatuses: true,
-					modelAliases: { "openai-codex/gpt-5.3-codex-spark": "5.4s" },
+					modelAliases: { "openai-codex/gpt-5.3-codex-spark": "5.3s" },
 				});
 				if (!res.success) {
 					ctx.ui.notify(t("notify.failedWriteConfig", { error: String(res.error ?? "") }), "error");

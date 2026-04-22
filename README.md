@@ -87,7 +87,7 @@ Built-in model aliases cover common families:
 - `gpt-5.4` → `5.4`
 - `gpt-5.4-mini` → `5.4m`
 - `gpt-5.4-codex` → `5.4c`
-- `gpt-5.3-codex-spark` → `5.4s`
+- `gpt-5.3-codex-spark` → `5.3s`
 - `gpt-4o-mini` → `4om`
 - `claude-sonnet-4.5` → `s4.5`
 - `claude-opus-4.5` → `o4.5`
@@ -110,7 +110,7 @@ Example (status allowlist):
     }
   },
   "modelAliases": {
-    "openai-codex/gpt-5.3-codex-spark": "5.4s"
+    "openai-codex/gpt-5.3-codex-spark": "5.3s"
   }
 }
 ```
