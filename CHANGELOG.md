@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.2 - 2026-04-22
+
+### Fixed
+- Remapped `gpt-5.3-codex-spark` to `5.4s` so it no longer collides with `5.3c` and degrades to hash-suffixed aliases like `5.3c-1ch`.
+- Added built-in compact aliases for common GPT, Claude, Gemini, Grok, and Kimi model families while preserving `modelAliases` user overrides.
+
 ## 1.4.1 - 2026-04-21
 
 ### Fixed

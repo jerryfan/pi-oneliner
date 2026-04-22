@@ -81,6 +81,20 @@ Common keys:
 - `shortCwd`: show last 2 cwd segments
 - `maxSessionLen`, `maxBranchLen`, `maxCwdLen`: truncation controls
 - `pollGitMs`: refresh git state without running git every render
+- `modelAliases`: explicit alias overrides by `provider/id` glob
+
+Built-in model aliases cover common families:
+- `gpt-5.4` → `5.4`
+- `gpt-5.4-mini` → `5.4m`
+- `gpt-5.4-codex` → `5.4c`
+- `gpt-5.3-codex-spark` → `5.4s`
+- `gpt-4o-mini` → `4om`
+- `claude-sonnet-4.5` → `s4.5`
+- `claude-opus-4.5` → `o4.5`
+- `gemini-2.5-pro` → `g2.5p`
+- `gemini-2.5-flash` → `g2.5f`
+
+User `modelAliases` still win over built-ins.
 
 Example (status allowlist):
 
@@ -94,6 +108,9 @@ Example (status allowlist):
       "priority": ["pi-semantic"],
       "maxVisible": 2
     }
+  },
+  "modelAliases": {
+    "openai-codex/gpt-5.3-codex-spark": "5.4s"
   }
 }
 ```

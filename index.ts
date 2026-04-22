@@ -440,6 +440,54 @@ function ensureUniqueAlias(fullId: string, baseAlias: string): string {
 	return candidate;
 }
 
+type BuiltInAliasRule = {
+	alias: string;
+	fullId?: RegExp;
+	id?: RegExp;
+	name?: RegExp;
+};
+
+const BUILTIN_MODEL_ALIAS_RULES: BuiltInAliasRule[] = [
+	{ alias: "5.4s", id: /^gpt-5\.3-codex-spark$/i, name: /^gpt\s*5\.3\s+codex\s+spark$/i },
+	{ alias: "5.4c", id: /^gpt-5\.4-codex(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.4\s+codex(?:\s+.+)?$/i },
+	{ alias: "5.4m", id: /^gpt-5\.4-mini(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.4\s+mini(?:\s+.+)?$/i },
+	{ alias: "5.4", id: /^gpt-5\.4(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.4(?:\s+.+)?$/i },
+	{ alias: "5.3c", id: /^gpt-5\.3-codex(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.3\s+codex(?:\s+.+)?$/i },
+	{ alias: "5.2c", id: /^gpt-5\.2-codex(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.2\s+codex(?:\s+.+)?$/i },
+	{ alias: "5.2", id: /^gpt-5\.2(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*5\.2(?:\s+.+)?$/i },
+	{ alias: "4om", id: /^gpt-4o-mini(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*4o\s+mini(?:\s+.+)?$/i },
+	{ alias: "4o", id: /^gpt-4o(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*4o(?:\s+.+)?$/i },
+	{ alias: "4.1m", id: /^gpt-4\.1-mini(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*4\.1\s+mini(?:\s+.+)?$/i },
+	{ alias: "4.1", id: /^gpt-4\.1(?:-[a-z0-9.]+)?$/i, name: /^gpt\s*4\.1(?:\s+.+)?$/i },
+	{ alias: "s4.5", id: /^claude-sonnet-(?:4[.-]5|4-5)(?:-[a-z0-9.]+)?$/i, name: /^claude\s+sonnet\s*4(?:[.-]5)\b(?:\s+.+)?$/i },
+	{ alias: "s4", id: /^claude-sonnet-4(?:-[a-z0-9.]+)?$/i, name: /^claude\s+sonnet\s*4\b(?:\s+.+)?$/i },
+	{ alias: "o4.5", id: /^claude-opus-(?:4[.-]5|4-5)(?:-[a-z0-9.]+)?$/i, name: /^claude\s+opus\s*4(?:[.-]5)\b(?:\s+.+)?$/i },
+	{ alias: "o4", id: /^claude-opus-4(?:-[a-z0-9.]+)?$/i, name: /^claude\s+opus\s*4\b(?:\s+.+)?$/i },
+	{ alias: "g2.5p", id: /^gemini-2\.5-pro(?:-[a-z0-9.]+)?$/i, name: /^gemini\s*2\.5\s+pro(?:\s+.+)?$/i },
+	{ alias: "g2.5f", id: /^gemini-2\.5-flash(?:-[a-z0-9.]+)?$/i, name: /^gemini\s*2\.5\s+flash(?:\s+.+)?$/i },
+	{ alias: "g3p", id: /^gemini-3(?:\.\d+)?-pro(?:-[a-z0-9.]+)?$/i, name: /^gemini\s*3(?:\.\d+)?\s+pro(?:\s+.+)?$/i },
+	{ alias: "g3f", id: /^gemini-3(?:\.\d+)?-flash(?:-[a-z0-9.]+)?$/i, name: /^gemini\s*3(?:\.\d+)?\s+flash(?:\s+.+)?$/i },
+	{ alias: "gcf1", id: /^grok-code-fast-1(?:-[a-z0-9.]+)?$/i, name: /^grok\s+code\s+fast\s+1(?:\s+.+)?$/i },
+	{ alias: "g4", id: /^grok-4(?:-[a-z0-9.]+)?$/i, name: /^grok\s*4(?:\s+.+)?$/i },
+	{ alias: "k2.5c", fullId: /^kimi-coding\/(?:kimi-for-coding|k2p5)$/i, id: /^(?:kimi-for-coding|k2p5)$/i, name: /^kimi\s+for\s+coding$/i },
+	{ alias: "k2.5", id: /^kimi-k2(?:\.5)?(?:-[a-z0-9.]+)?$/i, name: /^kimi\s*k2(?:\.5)?(?:\s+.+)?$/i },
+];
+
+function resolveBuiltInModelAlias(model: { provider?: string; id?: string; name?: string } | undefined): string | undefined {
+	if (!model) return undefined;
+	const provider = model.provider ?? "";
+	const modelId = model.id ?? "";
+	const modelName = model.name ?? "";
+	const fullId = `${provider}/${modelId}`;
+
+	for (const rule of BUILTIN_MODEL_ALIAS_RULES) {
+		if (rule.fullId && rule.fullId.test(fullId)) return rule.alias;
+		if (rule.id && rule.id.test(modelId)) return rule.alias;
+		if (rule.name && rule.name.test(modelName)) return rule.alias;
+	}
+	return undefined;
+}
+
 function resolveModelAlias(
 	model: { provider?: string; id?: string; name?: string } | undefined,
 	config: OnelinerConfig & typeof DEFAULT_CONFIG,
@@ -460,9 +508,14 @@ function resolveModelAlias(
 		}
 	}
 
-	// 2) GPT mapping with strict flavor detection.
-	// IMPORTANT: provider name must NOT force "c".
+	// 2) Built-in semantic remaps for common models.
+	const builtInAlias = resolveBuiltInModelAlias(model);
+	if (builtInAlias) return ensureUniqueAlias(fullId, builtInAlias);
+
+	// 3) GPT mapping with strict flavor detection.
+	// IMPORTANT: provider name must NOT force a suffix.
 	// We only append:
+	// - "s" when model itself is Spark
 	// - "c" when model itself is Codex
 	// - "m" when model itself is Mini
 	// Model name is the primary source of truth. We only fall back to id when name is missing.
@@ -473,17 +526,18 @@ function resolveModelAlias(
 	if (gpt?.[1]) {
 		const version = gpt[1];
 		const hasName = modelName.trim().length > 0;
+		const isSparkModel = hasName ? /\bspark\b/.test(nameLower) : /(^|[-_\s])spark($|[-_\s])/.test(idLower);
 		const isCodexModel = hasName ? /\bcodex\b/.test(nameLower) : /(^|[-_\s])codex($|[-_\s])/.test(idLower);
 		const isMiniModel = hasName ? /\bmini\b/.test(nameLower) : /(^|[-_\s])mini($|[-_\s])/.test(idLower);
-		const suffix = isCodexModel ? "c" : isMiniModel ? "m" : "";
+		const suffix = isSparkModel ? "s" : isCodexModel ? "c" : isMiniModel ? "m" : "";
 		return ensureUniqueAlias(fullId, `${version}${suffix}`);
 	}
 
-	// Claude naming: claude-sonnet-4-... -> sonnet-4
+	// 4) Claude naming fallback: claude-sonnet-4-... -> sonnet-4
 	const claude = modelId.match(/claude-(opus|sonnet)-(\d+)/i) ?? modelName.match(/claude\s+(opus|sonnet)[-\s]?(\d+)/i);
 	if (claude?.[1] && claude?.[2]) return ensureUniqueAlias(fullId, `${claude[1].toLowerCase()}-${claude[2]}`);
 
-	// Generic fallback: keep short and informative + uniqueness guarantee.
+	// 5) Generic fallback: keep short and informative + uniqueness guarantee.
 	const parts = modelId.split("-").filter(Boolean);
 	if (parts.length >= 2) return ensureUniqueAlias(fullId, `${parts[parts.length - 2]}-${parts[parts.length - 1]}`);
 	return ensureUniqueAlias(fullId, modelId || modelName || "model");
@@ -789,7 +843,7 @@ export default function oneliner(pi: ExtensionAPI): void {
 						maxCwdLen: 28,
 						pollGitMs: 1500,
 						showStatuses: true,
-						modelAliases: { "openai-codex/gpt-5.3*": "5.3c" },
+						modelAliases: { "openai-codex/gpt-5.3-codex-spark": "5.4s" },
 					});
 					if (!res.success) {
 						ctx.ui.notify(t("notify.failedWriteConfig", { error: String(res.error ?? "") }), "error");
@@ -938,7 +992,7 @@ export default function oneliner(pi: ExtensionAPI): void {
 					maxCwdLen: 28,
 					pollGitMs: 1500,
 					showStatuses: true,
-					modelAliases: { "openai-codex/gpt-5.3*": "5.3c" },
+					modelAliases: { "openai-codex/gpt-5.3-codex-spark": "5.4s" },
 				});
 				if (!res.success) {
 					ctx.ui.notify(t("notify.failedWriteConfig", { error: String(res.error ?? "") }), "error");
